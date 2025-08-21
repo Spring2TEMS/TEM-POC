@@ -15,10 +15,8 @@ jobs:
           -d "grant_type=client_credentials" \
           -d "client_id=${{ secrets.OAUTH_CLIENT_ID }}" \
           -d "client_secret=${{ secrets.OAUTH_CLIENT_SECRET }}" | jq -r '.access_token')
-    
-        STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-          -H "Authorization: Bearer $token" \
-          "https://ekyd-dev1.fa.em2.oraclecloud.com/fscmRestApi/resources/latest/")
+        
+        echo "ACCESS_TOKEN=$token" >> $GITHUB_ENV
     - name: Create json file Up
       run: |
                      cat <<EOF > Up.json
@@ -31,21 +29,28 @@ jobs:
       run: |
                      cat <<EOF > Down.json
                          {
-                            "id": 1,
-                            "name": "Available"
+                            "id": 0,
+                            "name": "Unavailable"
                           }
                      EOF
     - name: Update Apwide with Fusion status
       run: |
-        STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" "https://ekyd-dev1.fa.em2.oraclecloud.com")
-           if [ "$STATUS" = "200" ]; then
-           curl -X PUT "https://golive.apwide.net/api/status-change?environmentId=94&application=OFC%20EKYD-DEV1&category=Dev" \
-                          -H "Authorization: Bearer ${{ secrets.APWIDE_GOLIVE_API_TOKEN }}" \
-                          -H "Content-Type: application/json" \
-                          -d @Up.json
-              else
-              curl -X PUT "https://golive.apwide.net/api/status-change?environmentId=94&application=OFC%20EKYD-DEV1&category=Dev" \
-                -H "Authorization: Bearer ${{ secrets.APWIDE_GOLIVE_API_TOKEN }}" \
-                -H "Content-Type: application/json" \
-                -d @Down.json
-           fi
+        STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" \
+          -H "Authorization: Bearer ${{ env.ACCESS_TOKEN }}" \
+          "https://ekyd-dev1.fa.em2.oraclecloud.com/fscmRestApi/resources/latest/")
+        
+        echo "Health check status: $STATUS"
+        
+        if [ "$STATUS" = "200" ]; then
+          echo "Service is UP - updating Apwide with Available status"
+          curl -X PUT "https://golive.apwide.net/api/status-change?environmentId=94&application=OFC%20EKYD-DEV1&category=Dev" \
+            -H "Authorization: Bearer ${{ secrets.APWIDE_GOLIVE_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d @Up.json
+        else
+          echo "Service is DOWN - updating Apwide with Unavailable status"
+          curl -X PUT "https://golive.apwide.net/api/status-change?environmentId=94&application=OFC%20EKYD-DEV1&category=Dev" \
+            -H "Authorization: Bearer ${{ secrets.APWIDE_GOLIVE_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d @Down.json
+        fi
