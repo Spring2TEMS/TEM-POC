@@ -22,7 +22,7 @@ jobs:
                      cat <<EOF > Up.json
                         {
                           "id": 1,
-                          "name": "Available"
+                          "name": "Up"
                         }
                      EOF
     - name: Create json file Down
@@ -30,7 +30,7 @@ jobs:
                      cat <<EOF > Down.json
                          {
                             "id": 0,
-                            "name": "Unavailable"
+                            "name": "Down"
                           }
                      EOF
     - name: Update Apwide with Fusion status
