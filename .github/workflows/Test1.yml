@@ -2,8 +2,7 @@ name: EKYD-DEV1-ENV-STATUS
 
 on:
   workflow_dispatch:
-  schedule:
-     - cron: '0 */12 * * *'
+
 jobs:
   call-erp-soap:
     runs-on: ubuntu-latest
